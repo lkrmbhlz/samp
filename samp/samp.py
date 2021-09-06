@@ -24,12 +24,13 @@ def varimax_projections_2d(data_3d, get_1st_and_3rd_component=False):
     return projections_2d
 
 
-def asymmetries_x_axis(projections_2d, title=None, draw=True, stepsize=2, tolerance_percentage=0):
+def asymmetries_x_axis(projections_2d, title=None, draw=True, stepsize=2):
     asymmetries = []
+    asymmetries_single_values = []
     tolerance = stepsize / 2
 
     if draw:
-        fig, axs = plt.subplots(len(projections_2d), 2, figsize=(8, 4 * len(projections_2d) / 3))
+        fig, axs = plt.subplots(len(projections_2d), 2, figsize=(8, 4 * len(projections_2d)))
 
     print('Calculating asymmetries for %d objects' % len(projections_2d))
 
@@ -38,7 +39,7 @@ def asymmetries_x_axis(projections_2d, title=None, draw=True, stepsize=2, tolera
         x_range_min, x_range_max = (min(projection[:, 0]), max(projection[:, 0]))
 
         if draw:
-            axs[i][0].scatter(projections_2d[i][:, 0], projections_2d[i][:, 1], marker='.', alpha=0.01,
+            axs[i][0].scatter(projections_2d[i][:, 0], projections_2d[i][:, 1], marker='.', alpha=0.005,
                               c='black')
 
         asymmetry = 0
@@ -49,20 +50,16 @@ def asymmetries_x_axis(projections_2d, title=None, draw=True, stepsize=2, tolera
                 [[x, y] for x, y in projections_2d[i] if step - tolerance <= x < step + tolerance])
 
             if len(points_in_area) != 0:
-                if draw:
-                    axs[i][0].scatter(points_in_area[:, 0], points_in_area[:, 1], marker='.', alpha=0.01,
-                                      color='yellow')
-                number_of_considered_values = round(
-                    len(points_in_area) * tolerance_percentage) if tolerance_percentage != 0 else 1
+                number_of_considered_values = 1
 
-                if tolerance_percentage == 0 or number_of_considered_values == 0:
+                if number_of_considered_values == 0:
                     maximum = max(points_in_area[:, 1])
                 else:
                     maximum = np.mean(
                         points_in_area[np.argpartition(points_in_area[:, 1], -number_of_considered_values)[
                                        -number_of_considered_values:]][:, 1])
 
-                if tolerance_percentage == 0 or number_of_considered_values == 0:
+                if number_of_considered_values == 0:
                     minimum = min(points_in_area[:, 1])
                 else:
                     minimum = np.mean(
@@ -72,7 +69,7 @@ def asymmetries_x_axis(projections_2d, title=None, draw=True, stepsize=2, tolera
                 if minimum == maximum:
                     asymmetry_value = maximum + minimum
                 if np.sign(maximum) == 1 and np.sign(minimum) == -1:
-                    asymmetry_value = abs(maximum + minimum) * 2
+                    asymmetry_value = abs(maximum + minimum)
                 if np.sign(maximum) == 1 and np.sign(minimum) == 1:
                     asymmetry_value = maximum + minimum
                 if np.sign(maximum) == -1 and np.sign(minimum) == -1:
@@ -86,23 +83,29 @@ def asymmetries_x_axis(projections_2d, title=None, draw=True, stepsize=2, tolera
                 if draw:
                     axs[i][0].scatter(step, maximum, marker='.', color='green')
                     axs[i][0].scatter(step, minimum, marker='.', color='red')
+                    axs[i][0].set_aspect('equal')
 
                 asymmetry_values.append(asymmetry_value)
         if draw:
-            axs[i][1].plot(asymmetry_values)
+            axs[i][1].plot(asymmetry_values, marker='.')
+            axs[i][1].set_aspect('auto')
+        asymmetries_single_values.append(asymmetry_values)
         asymmetries.append(asymmetry)
     if draw:
         fig.suptitle(title)
-        fig.subplots_adjust(top=0.95)
-    return asymmetries
+        fig.tight_layout()
+        fig.subplots_adjust(top=0.97)
+    return asymmetries, asymmetries_single_values
 
 
 def asymmetries_y_axis(projections_2d, title=None, draw=True, stepsize=2):
     asymmetries_2nd_PC = []
     tolerance = stepsize / 2
 
+    asymmetries_single_values = []
+
     if draw:
-        fig, axs = plt.subplots(len(projections_2d), 2, figsize=(8, 4 * len(projections_2d) / 3))
+        fig, axs = plt.subplots(len(projections_2d), 2, figsize=(8, 4 * len(projections_2d)))
 
     print('Calculating asymmetries for %d objects' % len(projections_2d))
 
@@ -121,11 +124,6 @@ def asymmetries_y_axis(projections_2d, title=None, draw=True, stepsize=2):
             points_in_area = np.array(
                 [[x, y] for x, y in projections_2d[i] if y > step - tolerance and y < step + tolerance])
 
-            # print(points_in_area)
-            if draw and len(points_in_area) != 0:
-                axs[i][0].scatter(points_in_area[:, 0], points_in_area[:, 1],
-                                  marker='.', alpha=0.01, color='yellow')
-
             if len(points_in_area) != 0:
                 maximum_y = max(points_in_area[:, 0])
                 minimum_y = min(points_in_area[:, 0])
@@ -135,7 +133,7 @@ def asymmetries_y_axis(projections_2d, title=None, draw=True, stepsize=2):
                 if minimum_y == maximum_y:
                     asymmetry_value_y = maximum_y + minimum_y
                 if np.sign(maximum_y) == 1 and np.sign(minimum_y) == -1:
-                    asymmetry_value_y = abs(maximum_y + minimum_y) * 2
+                    asymmetry_value_y = abs(maximum_y + minimum_y)
                 if np.sign(maximum_y) == 1 and np.sign(minimum_y) == 1:
                     asymmetry_value_y = maximum_y + minimum_y
                 if np.sign(maximum_y) == -1 and np.sign(minimum_y) == -1:
@@ -148,14 +146,17 @@ def asymmetries_y_axis(projections_2d, title=None, draw=True, stepsize=2):
                 asymmetry_values_y.append(asymmetry_value_y)
 
         if draw and len(asymmetry_values_y) != 0:
-            axs[i][1].plot(asymmetry_values_y)
+            axs[i][1].plot(asymmetry_values_y, marker='.')
+            axs[i][1].set_aspect('auto')
         asymmetries_2nd_PC.append(asymmetry_y)
+        asymmetries_single_values.append(asymmetry_values_y)
 
     if draw:
         fig.suptitle(title)
-        fig.subplots_adjust(top=0.95)
+        fig.tight_layout()
+        fig.subplots_adjust(top=0.97)
 
-    return asymmetries_2nd_PC
+    return asymmetries_2nd_PC, asymmetries_single_values
 
 
 def min_max_asymmetries(asymmetries_of_projections_1st_axis, asymmetries_of_projections_2nd_axis):
@@ -175,3 +176,10 @@ def get_min_max_varimax(pointclouds, get_1st_and_3rd_component=False):
     asymmetries_x = asymmetries_x_axis(projections)
     asymmetries_y = asymmetries_y_axis(projections)
     return min_max_asymmetries(asymmetries_x, asymmetries_y)
+
+
+def remove_outliers(data, max_number_std=2):
+    mean = np.mean(data)
+    std_dev = np.std(data)
+    zero_based = abs(data - mean)
+    return data[zero_based < max_number_std * std_dev]
