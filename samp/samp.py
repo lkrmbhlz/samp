@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.decomposition import PCA, FactorAnalysis
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 
 def pca_projections_2d(data_3d):
@@ -30,7 +31,9 @@ def asymmetries_x_axis(projections_2d, title=None, draw=True, stepsize=2, tolera
     if draw:
         fig, axs = plt.subplots(len(projections_2d), 2, figsize=(8, 4 * len(projections_2d) / 3))
 
-    for i, projection in enumerate(projections_2d):
+    print('Calculating asymmetries for %d objects' % len(projections_2d))
+
+    for i, projection in enumerate(tqdm(projections_2d)):
 
         x_range_min, x_range_max = (min(projection[:, 0]), max(projection[:, 0]))
 
@@ -101,7 +104,9 @@ def asymmetries_y_axis(projections_2d, title=None, draw=True, stepsize=2):
     if draw:
         fig, axs = plt.subplots(len(projections_2d), 2, figsize=(8, 4 * len(projections_2d) / 3))
 
-    for i, projection in enumerate(projections_2d):
+    print('Calculating asymmetries for %d objects' % len(projections_2d))
+
+    for i, projection in enumerate(tqdm(projections_2d)):
 
         y_range_min, y_range_max = (min(projection[:, 1]), max(projection[:, 1]))
 
