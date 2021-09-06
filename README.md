@@ -16,7 +16,7 @@ of the asymmetries of the axes as representation for each object.
 A plotting mechanism is provided in the symmetry functions to visualize the result, in this case on a varimax projection 
 of a 3D-scan of a talus bone:
 
-![plot](images\asymmetry_example_01.PNG)
+![plot](https://github.com/lkrmbhlz/samp/blob/main/images/asymmetry_example_01.PNG)
 
 The green dots denote the maximum value in each bin and the red dots the corresponding minimum.
 The graph on the right visualizes the asymmetry value.
