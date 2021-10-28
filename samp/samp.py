@@ -24,7 +24,7 @@ def varimax_projections_2d(data_3d, get_1st_and_3rd_component=False):
     return projections_2d
 
 
-def asymmetries_x_axis(projections_2d, title=None, draw=True, stepsize=2):
+def asymmetries_x_axis(projections_2d, title=None, draw=False, stepsize=2):
     asymmetries = []
     asymmetries_single_values = []
     tolerance = stepsize / 2
@@ -62,9 +62,14 @@ def asymmetries_x_axis(projections_2d, title=None, draw=True, stepsize=2):
                 if number_of_considered_values == 0:
                     minimum = min(points_in_area[:, 1])
                 else:
-                    minimum = np.mean(
-                        points_in_area[np.argpartition(points_in_area[:, 1], number_of_considered_values)[
-                                       :number_of_considered_values]][:, 1])
+                    try:
+                        minimum = np.mean(
+                            points_in_area[np.argpartition(points_in_area[:, 1], number_of_considered_values)[
+                                           :number_of_considered_values]][:, 1])
+                    except ValueError:
+                        print('points in area ', points_in_area[:, 1])
+                        print('number of considered values', number_of_considered_values)
+                        pass
 
                 if minimum == maximum:
                     asymmetry_value = maximum + minimum
@@ -98,7 +103,7 @@ def asymmetries_x_axis(projections_2d, title=None, draw=True, stepsize=2):
     return asymmetries, asymmetries_single_values
 
 
-def asymmetries_y_axis(projections_2d, title=None, draw=True, stepsize=2):
+def asymmetries_y_axis(projections_2d, title=None, draw=False, stepsize=2):
     asymmetries_2nd_PC = []
     tolerance = stepsize / 2
 
@@ -168,13 +173,13 @@ def min_max_asymmetries(asymmetries_of_projections_1st_axis, asymmetries_of_proj
     return list(zip(min_asymmetry, max_asymmetry))
 
 
-def get_min_max_varimax(pointclouds, get_1st_and_3rd_component=False):
+def get_min_max_varimax(pointclouds, stepsize=2, get_1st_and_3rd_component=False):
     if get_1st_and_3rd_component:
         projections = varimax_projections_2d(pointclouds, get_1st_and_3rd_component=True)
     else:
         projections = varimax_projections_2d(pointclouds)
-    asymmetries_x = asymmetries_x_axis(projections)
-    asymmetries_y = asymmetries_y_axis(projections)
+    asymmetries_x, _ = asymmetries_x_axis(projections, stepsize=stepsize)
+    asymmetries_y, _ = asymmetries_y_axis(projections, stepsize=stepsize)
     return min_max_asymmetries(asymmetries_x, asymmetries_y)
 
 
