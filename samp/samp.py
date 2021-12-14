@@ -13,6 +13,13 @@ def pca_projections_2d(data_3d):
         projections_2d.append(pca.fit_transform(object_3d))
     return projections_2d
 
+def varimax_projections_real_2d(data_3d):
+    projections_2d = []
+    for object_3d in data_3d:
+        transformer = FactorAnalysis(n_components=2, random_state=0, rotation='varimax')
+        result = transformer.fit_transform(object_3d)
+        projections_2d.append(result[:, [0, 1]])
+    return projections_2d
 
 def varimax_projections_2d(data_3d, get_1st_and_3rd_component=False):
     projections_2d = []
@@ -28,20 +35,28 @@ def varimax_projections_2d(data_3d, get_1st_and_3rd_component=False):
 
 def asymmetries_x_axis(projections_2d, title=None, draw=False, n_segments=20,
                        considered_percentage=0.05, outlier_removal=False,
-                       number_of_std_for_outlier_removal=3, normalize=False):
+                       number_of_std_for_outlier_removal=3, normalize=True, alpha=0.02):
     if normalize:
+        print('norm')
         normalized_projections = []
-        min_max_scaler = preprocessing.MinMaxScaler()
+        min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1,1))
+        #scaler = preprocessing.StandardScaler()
         for unnormalized_projection in projections_2d:
-            normalized_projections.append(
-                min_max_scaler.fit_transform(np.array(unnormalized_projection)))
-    else: normalized_projections = projections_2d
+            #print('unnorm', unnormalized_projection)
+            #normalized = scaler.fit_transform(np.array(unnormalized_projection))
+            normalized = min_max_scaler.fit_transform(np.array(unnormalized_projection))
+            #print('norm', normalized)
+            normalized_projections.append(normalized)
+            #normalized_projections.append(
+            #    min_max_scaler.fit_transform(np.array(unnormalized_projection)))
+    else:
+        normalized_projections = projections_2d
 
     asymmetries = []
     asymmetries_single_values = []
 
     if draw:
-        fig, axs = plt.subplots(len(projections_2d), 2, figsize=(8, 4 * len(projections_2d)))
+        fig, axs = plt.subplots(len(projections_2d), 2, figsize=(9, 4 * len(projections_2d)))
 
     print('Calculating asymmetries for %d objects' % len(normalized_projections))
 
@@ -52,7 +67,7 @@ def asymmetries_x_axis(projections_2d, title=None, draw=False, n_segments=20,
         x_range_min, x_range_max = (min(projection[:, 0]), max(projection[:, 0]))
 
         if draw:
-            axs[i][0].scatter(normalized_projections[i][:, 0], normalized_projections[i][:, 1], marker='.', alpha=0.02,
+            axs[i][0].scatter(normalized_projections[i][:, 0], normalized_projections[i][:, 1], marker='.', alpha=alpha,
                               c='black')
 
         asymmetry = 0
@@ -125,12 +140,15 @@ def asymmetries_x_axis(projections_2d, title=None, draw=False, n_segments=20,
                 #    asymmetry_value = 10
                 # TODO change this to half
                 if normalize:
-                    distance_min_to_zero = distance.euclidean(minimum, 0.5)
-                    distance_max_to_zero = distance.euclidean(maximum, 0.5)
+                    distance_min_to_zero = distance.euclidean(minimum, 0)
+                    distance_max_to_zero = distance.euclidean(maximum, 0)
+                    asymmetry_value = abs(maximum + minimum)
                 else:
                     distance_min_to_zero = distance.euclidean(minimum, 0)
                     distance_max_to_zero = distance.euclidean(maximum, 0)
-                asymmetry_value = abs(distance_max_to_zero-distance_min_to_zero)
+                    asymmetry_value = abs(distance_max_to_zero-distance_min_to_zero)
+
+                asymmetry_value = abs(maximum + minimum)
                 asymmetry = asymmetry + asymmetry_value
 
                 if draw:
@@ -148,6 +166,8 @@ def asymmetries_x_axis(projections_2d, title=None, draw=False, n_segments=20,
             axs[i][1].set_aspect('auto')
             axs[i][1].set_xlabel('Segment')
             axs[i][1].set_ylabel('Difference')
+            axs[i][1].set_ylim(0,2)
+
         if outlier_removal:
             data_mean, data_std = np.mean(asymmetry_values), np.std(asymmetry_values)
             cut_off = data_std * number_of_std_for_outlier_removal
@@ -171,23 +191,22 @@ def asymmetries_x_axis(projections_2d, title=None, draw=False, n_segments=20,
 
 def asymmetries_y_axis(projections_2d, title=None, draw=False, n_segments=20, stepsize=2,
                        considered_percentage=0.05, outlier_removal=False, number_of_std_for_outlier_removal=3,
-                       normalize=False):
+                       normalize=True, alpha=0.02):
     # normalize the points
     if normalize:
         normalized_projections = []
-        min_max_scaler = preprocessing.MinMaxScaler()
+        min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1,1))
         for unnormalized_projection in projections_2d:
             normalized_projections.append(
                 min_max_scaler.fit_transform(np.array(unnormalized_projection)))
     else: normalized_projections = projections_2d
 
     asymmetries_2nd_PC = []
-    tolerance = stepsize / 2
 
     asymmetries_single_values = []
 
     if draw:
-        fig, axs = plt.subplots(len(projections_2d), 2, figsize=(8, 4 * len(projections_2d)))
+        fig, axs = plt.subplots(len(projections_2d), 2, figsize=(9, 4 * len(projections_2d)))
 
     print('Calculating asymmetries for %d objects' % len(projections_2d))
 
@@ -197,7 +216,7 @@ def asymmetries_y_axis(projections_2d, title=None, draw=False, n_segments=20, st
 
         if draw:
             axs[i][0].scatter(normalized_projections[i][:, 0], normalized_projections[i][:, 1], marker='.',
-                              alpha=0.02,
+                              alpha=alpha,
                               c='black')
 
         asymmetry_y = 0
@@ -235,13 +254,17 @@ def asymmetries_y_axis(projections_2d, title=None, draw=False, n_segments=20, st
 
                 #maximum_y = max(points_in_area[:, 0])
                 #minimum_y = min(points_in_area[:, 0])
-                if normalize:
-                    distance_min_to_zero = distance.euclidean(minimum_y, 0.5)
-                    distance_max_to_zero = distance.euclidean(maximum_y, 0.5)
-                else:
-                    distance_min_to_zero = distance.euclidean(minimum_y, 0)
-                    distance_max_to_zero = distance.euclidean(maximum_y, 0)
-                asymmetry_value_y = abs(distance_max_to_zero-distance_min_to_zero)
+                #if normalize:
+                #    distance_min_to_zero = distance.euclidean(minimum_y, 0)
+                #    distance_max_to_zero = distance.euclidean(maximum_y, 0)
+                #    asymmetry_value_y = abs(minimum_y + maximum_y)
+                #else:
+                #    distance_min_to_zero = distance.euclidean(minimum_y, 0)
+                #    distance_max_to_zero = distance.euclidean(maximum_y, 0)
+                #    #asymmetry_value_y = abs(distance_max_to_zero-distance_min_to_zero)
+
+                asymmetry_value_y = abs(maximum_y + minimum_y)
+
                 #if minimum_y == maximum_y:
                 #    asymmetry_value_y = maximum_y + minimum_y
                 #if np.sign(maximum_y) == 1 and np.sign(minimum_y) == -1:
@@ -266,6 +289,7 @@ def asymmetries_y_axis(projections_2d, title=None, draw=False, n_segments=20, st
 
             axs[i][1].plot(asymmetry_values_y, marker='.')
             axs[i][1].set_aspect('auto')
+            axs[i][1].set_ylim(0,2)
             axs[i][1].set_ylabel('Difference')
             axs[i][1].set_xlabel('Segment')
         if outlier_removal:
@@ -317,6 +341,23 @@ def get_min_max_varimax(pointclouds, stepsize=2, n_segments=20, get_1st_and_3rd_
     asymmetries_x, _ = asymmetries_x_axis(projections, n_segments=n_segments)
     asymmetries_y, _ = asymmetries_y_axis(projections, n_segments=n_segments)
     return min_max_asymmetries(asymmetries_x, asymmetries_y)
+
+
+def get_min_max_varimax_normed_scaled(pointclouds, n_segments=20, get_1st_and_3rd_component=False):
+    projections = varimax_projections_real_2d(pointclouds)
+
+    asymmetries_x, _ = asymmetries_x_axis(projections, n_segments=n_segments, normalize=True)
+    asymmetries_y, _ = asymmetries_y_axis(projections, n_segments=n_segments, normalize=True)
+
+    scaler_x = preprocessing.MinMaxScaler(feature_range=(0, 1))
+    scaled_x = np.array(
+        scaler_x.fit_transform(np.array(asymmetries_x).reshape(-1, 1)))
+
+    scaler_y = preprocessing.MinMaxScaler(feature_range=(0, 1))
+    scaled_y = np.array(
+        scaler_y.fit_transform(np.array(asymmetries_y).reshape(-1, 1)))
+
+    return min_max_asymmetries(scaled_x, scaled_y)
 
 
 def remove_outliers(data, max_number_std=2):
